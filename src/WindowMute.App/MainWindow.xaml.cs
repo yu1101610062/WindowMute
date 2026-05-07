@@ -17,6 +17,8 @@ namespace WindowMute.App;
 public sealed partial class MainWindow : Window
 {
     private const string AppIconRelativePath = "Assets\\AppIcon.ico";
+    private const int SwHide = 0;
+    private const int SwRestore = 9;
     private const int VersionPollMilliseconds = 150;
     private const int SafetySnapshotPollTicks = 7;
 
@@ -1064,7 +1066,8 @@ public sealed partial class MainWindow : Window
 
     private void HideToTray()
     {
-        ShowWindow(_hwnd, 0);
+        AppDiagnostics.Log("Hiding WindowMute to tray");
+        ShowWindow(_hwnd, SwHide);
     }
 
     public void StartHiddenToTray() => HideToTray();
@@ -1073,9 +1076,10 @@ public sealed partial class MainWindow : Window
 
     private void ShowWindowFromTray()
     {
-        ShowWindow(_hwnd, 5);
-        SetForegroundWindow(_hwnd);
+        AppDiagnostics.Log("Showing WindowMute from tray or external activation");
+        ShowWindow(_hwnd, SwRestore);
         Activate();
+        SetForegroundWindow(_hwnd);
     }
 
     private void ExitApplication()

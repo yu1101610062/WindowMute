@@ -49,6 +49,7 @@ public partial class App : Application
         _window = new MainWindow();
         if (startInTray)
         {
+            _window.Activate();
             _window.StartHiddenToTray();
             AppDiagnostics.Log("MainWindow started hidden to tray");
         }
@@ -100,6 +101,7 @@ public partial class App : Application
             {
                 using var showWindowEvent = EventWaitHandle.OpenExisting(ShowWindowEventName);
                 showWindowEvent.Set();
+                AppDiagnostics.Log("Signaled existing WindowMute instance");
                 return;
             }
             catch (WaitHandleCannotBeOpenedException)
@@ -125,6 +127,7 @@ public partial class App : Application
 
         ShowWindow(hwnd, SwRestore);
         SetForegroundWindow(hwnd);
+        AppDiagnostics.Log("Fallback activated existing WindowMute window by title");
     }
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
