@@ -14,6 +14,10 @@ $ProjectPath = Join-Path $RepoRoot "src\WindowMute.App\WindowMute.App.csproj"
 $InnoScriptPath = Join-Path $RepoRoot "installer\WindowMute.iss"
 $PublishDir = Join-Path $RepoRoot "artifacts\publish\WindowMute\$Runtime"
 $InstallerDir = Join-Path $RepoRoot "artifacts\installer"
+$ProjectName = [System.IO.Path]::GetFileNameWithoutExtension($ProjectPath)
+$ProjectXml = [xml](Get-Content -LiteralPath $ProjectPath -Raw)
+$TargetFramework = @($ProjectXml.Project.PropertyGroup.TargetFramework | Where-Object { $_ } | Select-Object -First 1)[0]
+$BuildOutputDir = Join-Path (Split-Path -Parent $ProjectPath) "bin\$Configuration\$TargetFramework\$Runtime"
 
 function Find-InnoCompiler {
     if ($env:ISCC_PATH -and (Test-Path -LiteralPath $env:ISCC_PATH)) {
@@ -54,6 +58,15 @@ dotnet publish $ProjectPath `
     -p:DebugType=None `
     -p:DebugSymbols=false `
     -o $PublishDir
+
+$AppPriSource = Join-Path $BuildOutputDir "$ProjectName.pri"
+$AppPriDestination = Join-Path $PublishDir "$ProjectName.pri"
+if (Test-Path -LiteralPath $AppPriSource) {
+    Copy-Item -LiteralPath $AppPriSource -Destination $AppPriDestination -Force
+}
+elseif (-not (Test-Path -LiteralPath $AppPriDestination)) {
+    throw "WinUI resource index was not found: $AppPriSource"
+}
 
 $IsccPath = Find-InnoCompiler
 if (-not $IsccPath) {
