@@ -25,6 +25,7 @@ public sealed partial class MainWindow : Window
     private readonly TrayIconService _tray;
     private readonly UiSettingsService _uiSettings;
     private readonly LocalizationService _loc;
+    private readonly StartupService _startupService;
     private readonly nint _hwnd;
     private readonly AppWindow _appWindow;
     private SnapshotDto _snapshot = new();
@@ -44,6 +45,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         _uiSettings = new UiSettingsService();
         _loc = new LocalizationService(_uiSettings);
+        _startupService = new StartupService();
         Title = _loc.T("app.title");
 
         _hwnd = WindowNative.GetWindowHandle(this);
@@ -540,6 +542,7 @@ public sealed partial class MainWindow : Window
         PageHost.Children.Add(PageTitle(_loc.T("settings.title"), _loc.T("settings.subtitle")));
         PageHost.Children.Add(LanguageSettingPanel());
         PageHost.Children.Add(ThemeSettingPanel());
+        PageHost.Children.Add(StartupSettingPanel());
         PageHost.Children.Add(HotkeySettingPanel());
         PageHost.Children.Add(InfoPanel(_loc.T("settings.close.title"), _loc.T("settings.close.message"), "\uE711"));
         PageHost.Children.Add(InfoPanel(_loc.T("settings.configuration.title"), _loc.T("settings.configuration.message"), "\uE8A5"));
@@ -649,6 +652,66 @@ public sealed partial class MainWindow : Window
 
         Grid.SetColumn(combo, 1);
         panel.Children.Add(combo);
+        return WrapCard(panel);
+    }
+
+    private FrameworkElement StartupSettingPanel()
+    {
+        var suppressToggle = false;
+        var toggle = new ToggleSwitch
+        {
+            IsOn = _startupService.IsEnabledForCurrentExe(),
+            OnContent = _loc.T("dashboard.auto.on"),
+            OffContent = _loc.T("dashboard.auto.off")
+        };
+
+        toggle.Toggled += (_, _) =>
+        {
+            if (suppressToggle)
+            {
+                return;
+            }
+
+            try
+            {
+                _startupService.SetEnabled(toggle.IsOn);
+            }
+            catch (Exception error)
+            {
+                suppressToggle = true;
+                try
+                {
+                    toggle.IsOn = _startupService.IsEnabledForCurrentExe();
+                }
+                finally
+                {
+                    suppressToggle = false;
+                }
+
+                ShowError(_loc.Format("startup.error", error.Message));
+            }
+        };
+
+        var panel = new Grid { ColumnSpacing = 16 };
+        panel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var text = new StackPanel { Spacing = 3 };
+        text.Children.Add(new TextBlock
+        {
+            Text = _loc.T("settings.startup.title"),
+            Style = TryStyle("BodyStrongTextBlockStyle")
+        });
+        text.Children.Add(new TextBlock
+        {
+            Text = _loc.T("settings.startup.description"),
+            Opacity = 0.72,
+            TextWrapping = TextWrapping.Wrap
+        });
+        panel.Children.Add(text);
+
+        Grid.SetColumn(toggle, 1);
+        panel.Children.Add(toggle);
         return WrapCard(panel);
     }
 
@@ -1003,6 +1066,8 @@ public sealed partial class MainWindow : Window
     {
         ShowWindow(_hwnd, 0);
     }
+
+    public void StartHiddenToTray() => HideToTray();
 
     public void ShowFromExternalActivation() => ShowWindowFromTray();
 

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using WindowMute.App.Core;
 using WindowMute.App.Models;
+using WindowMute.App.Services;
 using Xunit;
 
 namespace WindowMute.App.Tests;
@@ -71,5 +72,100 @@ public sealed class CoreRuleTests
         Assert.Equal(["music.exe"], config.Whitelist);
         Assert.Equal(["app.exe"], config.ManualMuted);
         Assert.Equal("M", config.Hotkeys.ToggleForeground.Key);
+    }
+
+    [Fact]
+    public void Startup_command_quotes_path_and_starts_in_tray()
+    {
+        var command = StartupService.BuildStartupCommand(@"C:\Program Files\WindowMute\WindowMute.App.exe");
+
+        Assert.Equal(@"""C:\Program Files\WindowMute\WindowMute.App.exe"" --tray", command);
+    }
+
+    [Fact]
+    public void Startup_is_enabled_only_for_current_exe_with_tray_argument()
+    {
+        var exePath = CreateTempExePath();
+        var store = new MemoryStartupRunStore();
+        var service = new StartupService(store, () => exePath);
+
+        service.SetEnabled(true);
+
+        Assert.True(service.IsEnabledForCurrentExe());
+        Assert.Equal(StartupService.BuildStartupCommand(exePath), store.GetValue(StartupService.RunValueName));
+    }
+
+    [Fact]
+    public void Startup_reconcile_removes_moved_portable_path()
+    {
+        var oldExePath = CreateTempExePath();
+        var currentExePath = CreateTempExePath();
+        var store = new MemoryStartupRunStore();
+        store.SetValue(StartupService.RunValueName, StartupService.BuildStartupCommand(oldExePath));
+        var service = new StartupService(store, () => currentExePath);
+
+        service.ReconcileOnLaunch();
+
+        Assert.Null(store.GetValue(StartupService.RunValueName));
+        Assert.False(service.IsEnabledForCurrentExe());
+    }
+
+    [Fact]
+    public void Startup_reconcile_removes_command_without_tray_argument()
+    {
+        var exePath = CreateTempExePath();
+        var store = new MemoryStartupRunStore();
+        store.SetValue(StartupService.RunValueName, $@"""{exePath}""");
+        var service = new StartupService(store, () => exePath);
+
+        service.ReconcileOnLaunch();
+
+        Assert.Null(store.GetValue(StartupService.RunValueName));
+    }
+
+    [Fact]
+    public void Startup_reconcile_removes_missing_executable()
+    {
+        var missingExePath = Path.Combine(Path.GetTempPath(), "WindowMute.Tests", Guid.NewGuid().ToString("N"), "WindowMute.App.exe");
+        var currentExePath = CreateTempExePath();
+        var store = new MemoryStartupRunStore();
+        store.SetValue(StartupService.RunValueName, StartupService.BuildStartupCommand(missingExePath));
+        var service = new StartupService(store, () => currentExePath);
+
+        service.ReconcileOnLaunch();
+
+        Assert.Null(store.GetValue(StartupService.RunValueName));
+    }
+
+    [Theory]
+    [InlineData("--tray", true)]
+    [InlineData("--TRAY", true)]
+    [InlineData("", false)]
+    [InlineData("--other", false)]
+    public void Launch_options_parse_tray_argument(string arg, bool expected)
+    {
+        var args = string.IsNullOrWhiteSpace(arg) ? [] : new[] { arg };
+
+        Assert.Equal(expected, LaunchOptions.ShouldStartInTray(args));
+    }
+
+    private static string CreateTempExePath()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "WindowMute Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "WindowMute.App.exe");
+        File.WriteAllText(path, string.Empty);
+        return path;
+    }
+
+    private sealed class MemoryStartupRunStore : IStartupRunStore
+    {
+        private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
+
+        public string? GetValue(string name) => _values.GetValueOrDefault(name);
+
+        public void SetValue(string name, string value) => _values[name] = value;
+
+        public void DeleteValue(string name) => _values.Remove(name);
     }
 }

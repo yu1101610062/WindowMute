@@ -1,5 +1,7 @@
 using Microsoft.UI.Xaml;
 using System.Runtime.InteropServices;
+using WindowMute.App.Core;
+using WindowMute.App.Services;
 
 namespace WindowMute.App;
 
@@ -27,19 +29,34 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         AppDiagnostics.Log("OnLaunched");
+        var startInTray = LaunchOptions.ShouldStartInTray(Environment.GetCommandLineArgs().Skip(1));
+        new StartupService().ReconcileOnLaunch();
+
         _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out var isFirstInstance);
         if (!isFirstInstance)
         {
             AppDiagnostics.Log("Existing WindowMute instance detected");
-            SignalExistingInstance();
+            if (!startInTray)
+            {
+                SignalExistingInstance();
+            }
+
             Exit();
             return;
         }
 
         StartShowWindowListener();
         _window = new MainWindow();
-        _window.Activate();
-        AppDiagnostics.Log("MainWindow activated");
+        if (startInTray)
+        {
+            _window.StartHiddenToTray();
+            AppDiagnostics.Log("MainWindow started hidden to tray");
+        }
+        else
+        {
+            _window.Activate();
+            AppDiagnostics.Log("MainWindow activated");
+        }
     }
 
     private void StartShowWindowListener()
