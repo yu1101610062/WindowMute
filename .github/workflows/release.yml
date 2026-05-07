@@ -1,0 +1,143 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the leading v
+        required: true
+        default: 0.1.0
+      prerelease:
+        description: Mark the GitHub release as a prerelease
+        required: true
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CONFIGURATION: Release
+  DOTNET_VERSION: 10.0.x
+  RUNTIME: win-x64
+
+jobs:
+  build-release:
+    name: Build Windows release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release metadata
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}".Trim()
+            $isPrerelease = "${{ inputs.prerelease }}" -eq "true"
+          } else {
+            $version = "${{ github.ref_name }}"
+            if ($version.StartsWith("v")) {
+              $version = $version.Substring(1)
+            }
+            $isPrerelease = $version.Contains("-")
+          }
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "Release version is empty."
+          }
+
+          $tagName = "v$version"
+          "VERSION=$version" >> $env:GITHUB_ENV
+          "TAG_NAME=$tagName" >> $env:GITHUB_ENV
+          "IS_PRERELEASE=$($isPrerelease.ToString().ToLowerInvariant())" >> $env:GITHUB_ENV
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path -LiteralPath $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+
+          if (-not (Test-Path -LiteralPath $iscc)) {
+            throw "Inno Setup compiler was not found after installation."
+          }
+
+          "ISCC_PATH=$iscc" >> $env:GITHUB_ENV
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore .\tests\WindowMute.App.Tests\WindowMute.App.Tests.csproj
+
+      - name: Test
+        shell: pwsh
+        run: dotnet test .\tests\WindowMute.App.Tests\WindowMute.App.Tests.csproj -c $env:CONFIGURATION --no-restore
+
+      - name: Build release artifacts
+        shell: pwsh
+        run: |
+          .\scripts\build-release.ps1 `
+            -Configuration $env:CONFIGURATION `
+            -Runtime $env:RUNTIME `
+            -Version $env:VERSION
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: WindowMute-${{ env.VERSION }}-${{ env.RUNTIME }}
+          path: artifacts/release/*
+          if-no-files-found: error
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $portableZip = "artifacts\release\WindowMute-$env:VERSION-$env:RUNTIME-portable.zip"
+          $installer = "artifacts\release\WindowMuteSetup-$env:VERSION-x64.exe"
+
+          if (-not (Test-Path -LiteralPath $portableZip)) {
+            throw "Portable package not found: $portableZip"
+          }
+
+          if (-not (Test-Path -LiteralPath $installer)) {
+            throw "Installer not found: $installer"
+          }
+
+          $notes = @"
+          ## WindowMute $env:VERSION
+
+          ### Assets
+          - Portable zip: ``WindowMute-$env:VERSION-$env:RUNTIME-portable.zip``
+          - Installer: ``WindowMuteSetup-$env:VERSION-x64.exe``
+
+          ### Validation
+          - ``dotnet test`` passed on Windows runner.
+          - Release publish and Inno Setup packaging completed successfully.
+          "@
+          Set-Content -LiteralPath release-notes.md -Value $notes -Encoding UTF8
+
+          $args = @(
+            "release", "create", $env:TAG_NAME,
+            $portableZip,
+            $installer,
+            "--title", "WindowMute $env:VERSION",
+            "--notes-file", "release-notes.md",
+            "--target", $env:GITHUB_SHA
+          )
+
+          if ($env:IS_PRERELEASE -eq "true") {
+            $args += "--prerelease"
+          }
+
+          gh @args
