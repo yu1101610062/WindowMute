@@ -20,6 +20,20 @@ WindowMute 是一个 Windows 桌面音量辅助工具。它可以通过快捷键
 
 > 基于 Windows Core Audio session 工作：选择窗口后，实际控制的是该窗口所属应用的音频会话；同一进程的多个窗口可能会共同受影响。
 
+## 产品截图
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="WindowMute 仪表盘" width="820" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/whitelist.png" alt="WindowMute 白名单" width="820" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings.png" alt="WindowMute 设置" width="820" />
+</p>
+
 ## 项目特点
 
 * 原生 Windows 11 体验：使用 WinUI 3 / Windows App SDK 构建，窗口、导航、托盘和提示尽量贴近 Fluent UI 风格。

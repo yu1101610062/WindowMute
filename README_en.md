@@ -20,6 +20,20 @@ WindowMute is a Windows desktop audio utility. It can mute selected applications
 
 > works on top of Windows Core Audio sessions. When you select a window, WindowMute controls the audio session of that window's application. Multiple windows from the same process may be affected together.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="WindowMute dashboard" width="820" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/whitelist.png" alt="WindowMute whitelist" width="820" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings.png" alt="WindowMute settings" width="820" />
+</p>
+
 ## Project Features
 
 * Native Windows 11 experience: built with WinUI 3 / Windows App SDK, with Fluent-style windowing, navigation, tray integration, and notifications.
