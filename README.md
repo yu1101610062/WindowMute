@@ -127,24 +127,6 @@ artifacts\release\WindowMute-0.1.0-win-x64-portable.zip
 artifacts\release\WindowMuteSetup-0.1.0-x64.exe
 ```
 
-## GitHub Actions 发布
-
-仓库内置 `Build and Release` 工作流，支持两种触发方式：
-
-* 推送 tag 自动发布：
-
-```powershell
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-* 在 GitHub Actions 页面手动运行 `Build and Release`，填写版本号。
-
-Release 会自动上传两个产物：
-
-* `WindowMute-<version>-win-x64-portable.zip`：绿色版压缩包。
-* `WindowMuteSetup-<version>-x64.exe`：安装包。
-
 ## 默认快捷键
 
 | 快捷键 | 功能 |

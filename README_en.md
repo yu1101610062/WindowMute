@@ -127,24 +127,6 @@ artifacts\release\WindowMute-0.1.0-win-x64-portable.zip
 artifacts\release\WindowMuteSetup-0.1.0-x64.exe
 ```
 
-## GitHub Actions Release
-
-The repository includes a `Build and Release` workflow with two trigger modes:
-
-* Push a tag to publish automatically:
-
-```powershell
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-* Run `Build and Release` manually from the GitHub Actions page and enter a version.
-
-Each release uploads two assets:
-
-* `WindowMute-<version>-win-x64-portable.zip`: portable zip package.
-* `WindowMuteSetup-<version>-x64.exe`: installer executable.
-
 ## Default Hotkey
 
 | Hotkey | Action |
