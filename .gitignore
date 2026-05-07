@@ -1,0 +1,16 @@
+target/
+bin/
+obj/
+artifacts/
+dist/
+.vs/
+.vscode/
+*.user
+*.suo
+*.log
+*.pdb
+*.ilk
+*.exe
+*.msi
+*.dll
+!src/WindowMute.App/Assets/*.dll

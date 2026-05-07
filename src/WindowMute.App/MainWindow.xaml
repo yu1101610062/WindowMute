@@ -1,0 +1,84 @@
+<Window
+    x:Class="WindowMute.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    Title="WindowMute">
+
+    <Grid x:Name="RootGrid" RowDefinitions="48,*">
+        <Grid
+            x:Name="AppTitleBar"
+            Grid.Row="0"
+            Background="Transparent"
+            ColumnDefinitions="Auto,*"
+            Height="48">
+            <TextBlock
+                x:Name="AppTitleText"
+                Margin="16,0,0,0"
+                VerticalAlignment="Center"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="WindowMute" />
+        </Grid>
+
+        <controls:NavigationView
+            x:Name="RootNav"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="False"
+            PaneDisplayMode="LeftCompact"
+            SelectionChanged="RootNav_SelectionChanged">
+            <controls:NavigationView.MenuItems>
+                <controls:NavigationViewItem x:Name="DashboardNavItem" Content="Dashboard" Tag="dashboard">
+                    <controls:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;" />
+                    </controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="MutedNavItem" Content="Muted Apps" Tag="muted">
+                    <controls:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE74F;" />
+                    </controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="WhitelistNavItem" Content="Whitelist" Tag="whitelist">
+                    <controls:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8FB;" />
+                    </controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="SessionsNavItem" Content="Sessions" Tag="sessions">
+                    <controls:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE995;" />
+                    </controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+            </controls:NavigationView.MenuItems>
+            <controls:NavigationView.FooterMenuItems>
+                <controls:NavigationViewItem x:Name="SettingsNavItem" Content="Settings" Tag="settings">
+                    <controls:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;" />
+                    </controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+            </controls:NavigationView.FooterMenuItems>
+
+            <controls:NavigationView.Content>
+                <Grid>
+                    <ScrollViewer>
+                        <StackPanel
+                            x:Name="PageHost"
+                            Margin="24"
+                            Spacing="16" />
+                    </ScrollViewer>
+
+                    <controls:InfoBar
+                        x:Name="StatusInfoBar"
+                        Canvas.ZIndex="10"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,24,0"
+                        MaxWidth="520"
+                        MinWidth="360"
+                        IsOpen="False"
+                        Severity="Informational"
+                        VerticalAlignment="Top" />
+                </Grid>
+            </controls:NavigationView.Content>
+        </controls:NavigationView>
+    </Grid>
+</Window>
